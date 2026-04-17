@@ -195,7 +195,7 @@ function App() {
 
       {showForm && (
         <div style={{ marginTop: "20px" }}>
-          <h2>Créer un tutorial</h2>
+          <h2>Ajouter des films et des séries</h2>
 
           <input
             type="text"
