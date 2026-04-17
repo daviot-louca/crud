@@ -125,7 +125,6 @@ function App() {
 
       const text = await res.text();
 
-      // 🔴 gestion erreur JSON ici
       let data;
       try {
         data = JSON.parse(text);
