@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
 
@@ -6,23 +7,21 @@ function App() {
 
   const [tutorials, setTutorials] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+
+  const [currentId, setCurrentId] = useState(null);
+  const [updateTitle, setUpdateTitle] = useState("");
+  const [updateDescription, setUpdateDescription] = useState("");
 
   // GET
   const fetchTutorials = async () => {
     try {
       const res = await fetch(API_URL);
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Erreur GET:", text);
-        return;
-      }
-
       const data = await res.json();
       setTutorials(data);
-
     } catch (err) {
       console.error(err);
     }
@@ -35,62 +34,49 @@ function App() {
   // DELETE ONE
   const deleteTutorial = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Erreur DELETE:", text);
-        return;
-      }
-
+      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       setTutorials(prev => prev.filter(t => t.id !== id));
-
     } catch (err) {
       console.error(err);
     }
   };
 
-  // UPDATE
-  const updateTutorial = async (id) => {
-    const newTitle = prompt("Modifier le titre :");
-    const newDescription = prompt("Modifier la description :");
-
-    if (!newTitle || !newDescription) return;
+  const updateTutorial = async () => {
+    if (!updateTitle || !updateDescription) return;
 
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
+      const res = await fetch(`${API_URL}/${currentId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          title: newTitle,
-          description: newDescription
+          title: updateTitle,
+          description: updateDescription
         })
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        console.error("Erreur UPDATE:", text);
+        console.error("Erreur UPDATE");
         return;
       }
 
+
+      // update local
       setTutorials(prev =>
         prev.map(t =>
-          t.id === id
-            ? { ...t, title: newTitle, description: newDescription }
+          t.id === currentId
+            ? { ...t, title: updateTitle, description: updateDescription }
             : t
         )
       );
+
+      setShowUpdate(false);
 
     } catch (err) {
       console.error(err);
     }
   };
-
-  // DELETE ALL
   const deleteAll = async () => {
     try {
       const res = await fetch(API_URL, {
@@ -109,7 +95,6 @@ function App() {
       console.error(err);
     }
   };
-
   // CREATE
   const handleSubmit = async () => {
     if (!title || !description) return;
@@ -123,24 +108,7 @@ function App() {
         body: JSON.stringify({ title, description })
       });
 
-      const text = await res.text();
-
-      // 🔴 gestion erreur JSON ici
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error("Réponse non JSON:", text);
-        return;
-      }
-
-      if (!res.ok) {
-        console.error("Erreur CREATE:", data);
-        return;
-      }
-
-      console.log("DATA BACK:", data);
-
+      const data = await res.json();
       setTutorials(prev => [...prev, data]);
 
       setTitle("");
@@ -153,74 +121,92 @@ function App() {
   };
 
   return (
-    <div>
-      <h1>Liste de films et séries</h1>
+    <div className="site">
+      <div className="btns">
+        <h1 className="gauche">Liste de films et séries</h1>
+        <div className="boutonsPP">
+          <button className="btnss ml" onClick={() => setShowForm(true)}>&#43;</button>
+          <button className="btnss" onClick={deleteAll}> &#8635; </button>  
+        </div>
+      </div>
 
-      <table border="1">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Titre</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
 
-        <tbody>
+      <div className="table gauche">
+        <div className="entete">
+          <div className="tr">
+            <div className="th">ID</div>
+            <div className="th">Titre</div>
+            <div className="th">Description</div>
+          </div>
+        </div>
+        <div className="corps">
           {tutorials.map((tutorial) => (
-            <tr key={tutorial.id}>
-              <td>{tutorial.id}</td>
-              <td>{tutorial.title}</td>
-              <td>{tutorial.description}</td>
-              <td>
-                <button onClick={() => updateTutorial(tutorial.id)}>
-                  Modifier
+          <div className="tr"key={tutorial.id}>
+            <div className="td">{tutorial.id}</div>
+            <div className="td">{tutorial.title}</div>
+            <div className="td">{tutorial.description}</div>
+            <button className="btnTableau" onClick={() => {
+              setCurrentId(tutorial.id);
+              setUpdateTitle(tutorial.title);
+              setUpdateDescription(tutorial.description);
+              setShowUpdate(true);
+                }}>
+                  &#9998;
                 </button>
-                <button onClick={() => deleteTutorial(tutorial.id)}>
-                  Supprimer
+
+                <button className="btnTableau" onClick={() => deleteTutorial(tutorial.id)}>
+                  ✖
                 </button>
-              </td>
-            </tr>
+          </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+      <div>
 
-      <button onClick={() => setShowForm(true)}>
-        Ajouter
-      </button>
 
-      <button onClick={deleteAll}>
-        Réinitialiser BDD
-      </button>
-
+        </div>
+      </div>
+      
       {showForm && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>Ajouter des films et des séries</h2>
-
+        <div className="overlay">
+        <div className="contenus">
+          <h3 className="gauche">Film</h3>
           <input
-            type="text"
-            placeholder="Titre"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-
-          <br />
-
+          <h3 className="gauche">Description</h3>
           <textarea
-            placeholder="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-
           <br />
+          <div>
+            <button className="btnss ml" onClick={() => setShowForm(false)}>✖</button> 
+           <button className="btnss" onClick={handleSubmit}>✔</button>
+          </div>
+          
+        </div>
+        </div>
+      )}
 
-          <button onClick={handleSubmit}>
-            Valider
-          </button>
-
-          <button onClick={() => setShowForm(false)}>
-            Annuler
-          </button>
+      {showUpdate && (
+        <div className="overlay">
+          <div className="contenus">
+            <h3 className="gauche">Film</h3>
+            <input
+              value={updateTitle}
+              onChange={(e) => setUpdateTitle(e.target.value)}
+            />
+            <h3 className="gauche">Description</h3>
+            <textarea
+              value={updateDescription}
+              onChange={(e) => setUpdateDescription(e.target.value)}
+            />
+            <div>
+              <button className="btnss ml" onClick={() => setShowUpdate(false)}>✖</button>
+              <button className="btnss" onClick={updateTutorial}>✔</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
